@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera Access with Permission</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+
+    #camera-container {
+      width: 100%;
+      max-width: 600px;
+      position: relative;
+    }
+
+    video {
+      width: 100%;
+      border-radius: 8px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .error-message {
+      color: red;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    #permission-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    #permission-button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div id="camera-container">
+    <video id="camera-output" autoplay playsinline muted></video>
+    <p id="error-message" class="error-message"></p>
+    <button id="permission-button">Allow Camera Access</button>
+  </div>
+
+  <script>
+    const videoElement = document.getElementById('camera-output');
+    const errorMessage = document.getElementById('error-message');
+    const permissionButton = document.getElementById('permission-button');
+
+    // Function to access the camera
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment" // Use back camera on mobile devices
+          }
+        });
+
+        // Attach stream to video element
+        videoElement.srcObject = stream;
+        errorMessage.textContent = ''; // Clear any errors
+        permissionButton.style.display = 'none'; // Hide permission button after success
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+
+        // Show error message
+        if (error.name === 'NotAllowedError') {
+          errorMessage.textContent = 'Camera access denied. Please allow camera permissions.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage.textContent = 'No camera found on this device.';
+        } else {
+          errorMessage.textContent = 'Unable to access camera. Check your browser settings.';
+        }
+      }
+    }
+
+    // Request camera access when the button is clicked
+    permissionButton.addEventListener('click', () => {
+      startCamera();
+    });
+
+    // Auto-check permissions on load
+    async function checkPermissions() {
+      try {
+        const permissions = await navigator.permissions.query({ name: 'camera' });
+
+        if (permissions.state === 'granted') {
+          // Start the camera automatically if permission was already granted
+          startCamera();
+        } else {
+          // Show the button to request permissions
+          permissionButton.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Permission query error:', error);
+        permissionButton.style.display = 'block'; // Show the button by default
+      }
+    }
+
+    // Check permissions on page load
+    window.addEventListener('load', checkPermissions);
+  </script>
+</body>
+</html>
